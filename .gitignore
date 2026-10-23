@@ -218,3 +218,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ko push cc len github
+ssl/*.key
+ssl/*.crt

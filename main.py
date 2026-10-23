@@ -2,8 +2,7 @@ import os
 import html
 import asyncpg
 from datetime import datetime
-from fastapi import FastAPI, WebSocket
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from contextlib import asynccontextmanager
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -106,11 +105,11 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, username: str):
                     "type": "typing",
                     "sender": username
                 }, exclude=websocket)
-    except:
+    except WebSocketDisconnect:
         manager.disconnect(room_id, websocket)
         await manager.broadcast(room_id, {
             "type": "system",
             "content": f"{username} đã rời khỏi phòng {room_id}"
         })
-
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+    except Exception as e:
+        manager.disconnect(room_id, websocket)

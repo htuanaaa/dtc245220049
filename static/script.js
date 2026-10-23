@@ -1,7 +1,8 @@
 const username = prompt("Nhập tên của bạn:") || "khách_" + Math.floor(Math.random() * 1000);
-const roomId = prompt("Nhập mã phòng:") || "general";
+const roomId = prompt("Nhập mã phòng:") || "phòng_chung";
 
-const ws = new WebSocket(`ws://${location.host}/ws/${encodeURIComponent(roomId)}?username=${encodeURIComponent(username)}`);
+const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+const ws = new WebSocket(`${protocol}://${window.location.host}/ws/${encodeURIComponent(roomId)}?username=${encodeURIComponent(username)}`);
 
 const chatBox = document.getElementById("chat-box");
 const msgInput = document.getElementById("message-input");
@@ -80,5 +81,12 @@ msgInput.onkeydown = (e) => {
 msgInput.addEventListener("input", () => {
     if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: "typing" }));
+    }
+});
+
+window.addEventListener("pageshow", (event) => {
+    const nav = performance.getEntriesByType("navigation")[0];
+    if (event.persisted || nav && nav.type === "back_forward") {
+        window.location.reload()
     }
 });

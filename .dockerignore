@@ -1,3 +1,9 @@
 Dockerfile
 docker-compose.yml
-*.env
+.dockerignore
+.env*
+.git/
+.gitignore
+static/
+nginx.conf
+ssl/
