@@ -5,5 +5,5 @@ docker-compose.yml
 .git/
 .gitignore
 static/
-nginx.conf
+config/
 ssl/

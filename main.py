@@ -2,8 +2,11 @@ import os
 import html
 import asyncpg
 from datetime import datetime
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from contextlib import asynccontextmanager
+from prometheus_client import Counter, Gauge
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from prometheus_fastapi_instrumentator import Instrumentator
+
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 db_pool: asyncpg.Pool | None = None
@@ -27,6 +30,25 @@ async def lifespan(app: FastAPI):
     await db_pool.close()
 
 app = FastAPI(lifespan=lifespan)
+
+ws_active_connections = Gauge(
+    "websocket_active_connections",
+    "so luong client websocket dang duy tri ket noi thuc te"
+)
+
+ws_messages_total = Counter(
+    "websocket_messages_total",
+    "tong so tin nhan chat xu ly qua websocket",
+    ["direction"]
+)
+
+ws_connection_events_total = Counter(
+    "websocket_connection_events_total",
+    "tong so su kien ket noi hoac ngat ket noi",
+    ["event"]
+)
+
+Instrumentator().instrument(app).expose(app)
 
 class ConnectionManager:
     def __init__(self):
@@ -74,9 +96,13 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, username: str):
         "content": f"{username} đã tham gia phòng {room_id}"
     }, exclude=websocket)
 
+    ws_active_connections.inc()
+    ws_connection_events_total.labels(event="connect").inc()
+
     try:
         while True:
             data = await websocket.receive_json()
+            ws_messages_total.labels(direction="in").inc()
             event_type = data.get("type")
 
             if event_type == "chat":
@@ -100,6 +126,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, username: str):
                     "content": raw_text,    # clean_content
                     "time": current_time
                 })
+                ws_messages_total.labels(direction="out").inc()
             elif event_type == "typing":
                 await manager.broadcast(room_id, {
                     "type": "typing",
@@ -111,5 +138,7 @@ async def websocket_endpoint(websocket: WebSocket, room_id: str, username: str):
             "type": "system",
             "content": f"{username} đã rời khỏi phòng {room_id}"
         })
+        ws_active_connections.dec()
+        ws_connection_events_total.labels(event="disconnect").inc()
     except Exception as e:
         manager.disconnect(room_id, websocket)
