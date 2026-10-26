@@ -1,5 +1,15 @@
-const username = prompt("Nhập tên của bạn:") || "khách_" + Math.floor(Math.random() * 1000);
-const roomId = prompt("Nhập mã phòng:") || "phòng_chung";
+let username = "";
+while (true) {
+    username = (prompt("Nhập tên của bạn:") || "").trim() || "khách_" + Math.floor(Math.random() * 1000);
+    if (username.length >= 3 && username.length <= 50) break;
+    alert("Tên người dùng cần 3 - 50 ký tự. vui lòng nhập lại!");
+}
+let roomId = "";
+while (true) {
+    roomId = (prompt("Nhập mã phòng:") || "").trim() || "Phòng_chung";
+    if (roomId.length >= 3 && roomId.length <= 30) break;
+    alert("Mã phòng cần 3 - 30 ký tự. vui lòng nhập lại!");
+}
 
 const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 const ws = new WebSocket(`${protocol}://${window.location.host}/ws/${encodeURIComponent(roomId)}?username=${encodeURIComponent(username)}`);
